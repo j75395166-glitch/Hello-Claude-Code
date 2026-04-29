@@ -12,6 +12,7 @@ node_modules/
 # 构建产物
 dist/
 build/
+backend/target/
 
 # Office 文件（不提交到代码仓库）
 *.pptx
