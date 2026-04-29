@@ -7,6 +7,7 @@ const captchaInput = ref('')
 const captchaCode = ref('')
 const errorMsg = ref('')
 const successMsg = ref('')
+const loading = ref(false)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 function generateCaptcha() {
@@ -62,7 +63,7 @@ function drawCaptcha(code: string) {
   }
 }
 
-function handleLogin() {
+async function handleLogin() {
   errorMsg.value = ''
   successMsg.value = ''
 
@@ -78,12 +79,25 @@ function handleLogin() {
     return
   }
 
-  // 模拟登录验证
-  if (username.value === 'admin' && password.value === '123456') {
-    successMsg.value = '登录成功！欢迎回来，' + username.value
-  } else {
-    errorMsg.value = '用户名或密码错误'
-    generateCaptcha()
+  loading.value = true
+  try {
+    const res = await fetch('http://localhost:8080/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username.value, password: password.value }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      localStorage.setItem('token', data.token)
+      successMsg.value = `登录成功！欢迎回来，${data.username}`
+    } else {
+      errorMsg.value = data.message || '用户名或密码错误'
+      generateCaptcha()
+    }
+  } catch {
+    errorMsg.value = '网络错误，请稍后重试'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -147,7 +161,9 @@ onMounted(() => {
         <div v-if="errorMsg" class="msg error">{{ errorMsg }}</div>
         <div v-if="successMsg" class="msg success">{{ successMsg }}</div>
 
-        <button type="submit" class="btn-login">登 录</button>
+        <button type="submit" class="btn-login" :disabled="loading">
+          {{ loading ? '登录中...' : '登 录' }}
+        </button>
 
         <div class="footer-links">
           <span>测试账号：admin / 123456</span>
